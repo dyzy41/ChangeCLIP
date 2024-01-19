@@ -3,7 +3,8 @@ _base_ = [
     '../_base_/datasets/base_cd.py',
     '../_base_/default_runtime.py', 
     '../_base_/schedules/schedule_160k.py']
-data_root = '/home/ps/HDD/zhaoyq_data/CDdata/LEVIR_CD_PLUS/cut_data'
+import os
+data_root = os.path.join(os.environ.get("CDPATH"), 'LEVIR_CD_PLUS/cut_data')
 metainfo = dict(
                 classes=('background', 'building'),
                 palette=[[0, 0, 0], [255, 255, 255]])

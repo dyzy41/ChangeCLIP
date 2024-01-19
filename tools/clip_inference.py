@@ -29,11 +29,11 @@ def predict_image_class(image_path, model, preprocess, text, device):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Change Detection Dataset Arguments')
     # Add arguments
-    parser.add_argument('--src_path', type=str, default='/home/ps/HDD/zhaoyq_data/DATASET/WHUCD', help='Path to the source dataset')
+    parser.add_argument('--src_path', type=str, default='CDdata/WHUCD', help='Path to the source dataset')
     parser.add_argument('--split', nargs='+', type=str, default=[''], help='Split(s) to use (train, val, test)')
     parser.add_argument('--img_split', nargs='+', type=str, default=['A', 'B'], help='Image split(s) to use (A, B)')
     parser.add_argument('--model_name', type=str, default='ViT-B/16', help='Name of the model')
-    parser.add_argument('--class_names_path', type=str, default='/home/ps/zhaoyq_files/changeclip/ChangeCLIP/tools/rscls.txt', help='Path to the class names file')
+    parser.add_argument('--class_names_path', type=str, default='rscls.txt', help='Path to the class names file')
     parser.add_argument('--device', type=str, default='cuda:0', help='Device to use for model execution')
     parser.add_argument('--tag', type=str, default='56_vit16', help='Batch size for model execution')
 
