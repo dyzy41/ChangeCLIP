@@ -1,0 +1,1 @@
+This is a project framework for change detection and semantic segmentation based on mmsegmentation.

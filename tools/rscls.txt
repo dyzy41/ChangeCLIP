@@ -1,0 +1,56 @@
+airport, 飞机场
+bare land, 裸地
+basketball court, 篮球场
+beach, 海滩
+bridge, 桥
+dense residential, 密集住宅区  #
+farmland, 农田
+forest, 森林  #
+freeway, 高速公路
+ground track field, 地面径赛场
+harbor, 港口
+island, 岛屿
+lake, 湖泊
+meadow, 草地
+mine, 矿山
+mountain, 山地
+oil tank, 油罐
+runway, 跑道
+sea, 大海
+solar panel, 太阳能板
+stadium, 运动场
+tennis court, 网球场
+terrace, 岸梯田
+wetland, 湿地
+commercial area, 商业区
+cotton field, 棉田
+industrial area, 工业区
+railway, 铁路
+interchange, 立交桥
+single-family residential, 单体住宅
+highway, 高速公路
+intersection, 交叉口
+golf course, 高尔夫球场
+desert, 沙漠
+river, 河流
+campus, 校园
+prairie, 草原
+building, 建筑物
+fertile land, 沃土区
+park, 公园
+parking lot, 停车场
+square, 广场
+road, 道路
+tree, 树木
+cars, 车辆
+shrubbery, 灌木丛
+impermeable surface, 不透水地表
+ship, 船
+airplane, 飞机
+pond, 池塘
+church, 教堂
+chaparral, 丛林
+storage tanks, 储油罐
+snow land, 雪地
+container, 集装箱
+cabin, 小屋
