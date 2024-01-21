@@ -812,8 +812,9 @@ class TXTCDDatasetJSON(BaseDataset):
         if osp.isfile(self.ann_file):
             lines = mmengine.list_from_file(
                 self.ann_file, backend_args=self.backend_args)
-            jsondataA = self.load_json(os.path.dirname(lines[0].strip().split('  ')[0])+'_clipcls_56_vit16.json')
-            jsondataB = self.load_json(os.path.dirname(lines[0].strip().split('  ')[1])+'_clipcls_56_vit16.json')
+            if os.path.exists(os.path.dirname(lines[0].strip().split('  ')[0])+'_clipcls_56_vit16.json'):
+                jsondataA = self.load_json(os.path.dirname(lines[0].strip().split('  ')[0])+'_clipcls_56_vit16.json')
+                jsondataB = self.load_json(os.path.dirname(lines[0].strip().split('  ')[1])+'_clipcls_56_vit16.json')
             for line in lines:
                 pimgA = line.strip().split('  ')[0]
                 pimgB = line.strip().split('  ')[1]
@@ -833,8 +834,12 @@ class TXTCDDatasetJSON(BaseDataset):
                 data_info['label_map'] = self.label_map
                 data_info['reduce_zero_label'] = self.reduce_zero_label
                 data_info['seg_fields'] = []
-                data_info['jsonA'] = jsondataA[pimgA]
-                data_info['jsonB'] = jsondataB[pimgB]
+                if os.path.exists(os.path.dirname(lines[0].strip().split('  ')[0])+'_clipcls_56_vit16.json'):
+                    data_info['jsonA'] = jsondataA[pimgA]
+                    data_info['jsonB'] = jsondataB[pimgB]
+                else:
+                    data_info['jsonA'] = []
+                    data_info['jsonB'] = []
                 data_list.append(data_info)
                 # 备注4 这里根据变化检测的txt形式，修改了数据接口，跟语义分割的类似。
         else:

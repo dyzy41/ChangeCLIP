@@ -7,12 +7,15 @@ import torch.nn.functional as F
 from torch import Tensor
 import matplotlib.pyplot as plt
 import seaborn as sns
+import cv2
+from PIL import Image
 import os
 
 from mmseg.models.utils import resize
 from mmseg.models import builder
 from mmcv.cnn import ConvModule
 from mmseg.models.utils.se_layer import SELayer_v2 as SELayer
+from mmseg.models.utils.clip_func import clip_infer, init_clip
 
 from ..utils.untils import tokenize
 
@@ -255,6 +258,7 @@ class ChangeCLIP(BaseSegmentor):
         """Run forward function and calculate loss for decode head in
         training."""
         losses = dict()
+        loss_decode = self.decode_head.predict_with_text(x, textA, textB, data_samples, self.train_cfg)
         loss_decode = self.decode_head.loss_changeclip(x, textA, textB, data_samples, self.train_cfg)
         losses.update(add_prefix(loss_decode, 'decode'))
         return losses
@@ -445,6 +449,9 @@ class ChangeCLIP(BaseSegmentor):
             loss_identity_sm = self._identity_head_forward_train(
                 score_map_diff/self.tau, data_samples, 'aux_score_map')
             losses.update(loss_identity_sm)
+            loss_identity1 = self._identity_head_forward_train(
+                x[0], data_samples, 'aux_layer0')
+            losses.update(loss_identity1)
             # loss_identity1 = self._identity_head_forward_train(
             #     x[0], data_samples, 'aux_layer0')
             # losses.update(loss_identity1)
@@ -454,6 +461,9 @@ class ChangeCLIP(BaseSegmentor):
             loss_identity3 = self._identity_head_forward_train(
                 x[2], data_samples, 'aux_layer2')
             losses.update(loss_identity3)
+            loss_identity4 = self._identity_head_forward_train(
+                x[3], data_samples, 'aux_layer3')
+            losses.update(loss_identity4)
             # loss_identity4 = self._identity_head_forward_train(
             #     x[3], data_samples, 'aux_layer3')
             # losses.update(loss_identity4)
@@ -516,12 +526,121 @@ class ChangeCLIP(BaseSegmentor):
         Returns:
             Tensor: Forward output of model without any post-processes.
         """
+        import time
+        torch.cuda.synchronize()
+        start = time.time()
         inputsA = inputs[:, :3, :, :]
         inputsB = inputs[:, 3:, :, :]
         xA = self.extract_feat(inputsA)
         xB = self.extract_feat(inputsB)
-        x = [xA[i]+xB[i] for i in range(len(xA))]
-        return self.decode_head.forward(x)
+
+        x_g = xA[-1][0]+xB[-1][0]
+        x_l = xA[-1][1]+xB[-1][1]
+        x_cat = [torch.cat((xA[i], xB[i]), dim=1) for i in range(len(xA)-1)]
+        x_cat.append([x_g, x_l])
+
+        textA = []
+        textB = []
+        foreA = ', '.join(['remote sensing image foreground objects']+['mountain', 'bare land', 'ground track field', 'road', 'farmland', 'dense residential', 'island', 'highway', 'fertile land'])
+        backA = ', '.join(['remote sensing image background objects'])
+        foreB = ', '.join(['ground track field', 'farmland', 'bare land', 'wetland', 'golf course', 'island', 'fertile land', 'interchange', 'pond'])
+        backB = ', '.join(['remote sensing image background objects'])
+        textA.append(torch.cat([tokenize(c, context_length=self.context_length) for c in [backA, foreA]]).unsqueeze(0))
+        textB.append(torch.cat([tokenize(c, context_length=self.context_length) for c in [backB, foreB]]).unsqueeze(0))
+        textA, textB = torch.cat(textA, dim=0), torch.cat(textB, dim=0)
+
+        text_embeddingsA, x_clipA, score_mapA = self.after_extract_feat_clip(xA, textA)
+        text_embeddingsB, x_clipB, score_mapB = self.after_extract_feat_clip(xB, textB)
+
+        x_orig = [torch.cat([x_clipA[i], x_clipB[i]], dim=1) for i in range(len(x_clipA))]
+
+        x_minus = [self.minus_conv[i](torch.abs(x_clipA[i]-x_clipB[i])) for i in range(len(x_clipA))]
+        x_diff = [F.sigmoid(1-torch.cosine_similarity(x_clipA[i], x_clipB[i], dim=1)).unsqueeze(1) for i in range(len(x_clipA))]
+
+        if self.with_neck:
+            x_orig = list(self.neck(x_orig))
+            _x_orig = x_orig
+
+        if self.text_head:
+            x = [text_embeddingsA,] + x_orig
+        else:
+            x = x_orig
+
+        x = [torch.cat([x[i]*x_diff[i], x_minus[i], x[i]], dim=1) for i in range(len(x))]
+        x = [self.channel_att[i](x[i]) for i in range(len(x))]
+        data_samples = [{'image_shape': (256, 256)}]
+
+        seg_logits = self.decode_head.predict_with_text(x, text_embeddingsA, text_embeddingsB, data_samples,
+                                              self.test_cfg)
+        torch.cuda.synchronize()
+        end = time.time()
+        total_time = end - start
+        print('total_time:{:.2f}'.format(total_time))
+        return seg_logits
+
+    def mm_slide_inference(self, inputs: Tensor,
+                        batch_img_metas: List[dict]) -> Tensor:
+        """Inference by sliding-window with overlap.
+
+        If h_crop > h_img or w_crop > w_img, the small patch will be used to
+        decode without padding.
+
+        Args:
+            inputs (tensor): the tensor should have a shape NxCxHxW,
+                which contains all images in the batch.
+            batch_img_metas (List[dict]): List of image metainfo where each may
+                also contain: 'img_shape', 'scale_factor', 'flip', 'img_path',
+                'ori_shape', and 'pad_shape'.
+                For details on the values of these keys see
+                `mmseg/datasets/pipelines/formatting.py:PackSegInputs`.
+
+        Returns:
+            Tensor: The segmentation results, seg_logits from model of each
+                input image.
+        """
+        inputs = inputs[0].unsqueeze(0)
+        h_stride, w_stride = self.test_cfg.stride
+        h_crop, w_crop = self.test_cfg.crop_size
+        batch_size, _, h_img, w_img = inputs.size()
+        out_channels = self.out_channels
+        h_grids = max(h_img - h_crop + h_stride - 1, 0) // h_stride + 1
+        w_grids = max(w_img - w_crop + w_stride - 1, 0) // w_stride + 1
+        preds = inputs.new_zeros((batch_size, out_channels, h_img, w_img))
+        count_mat = inputs.new_zeros((batch_size, 1, h_img, w_img))
+
+        imgA_pil = Image.open(batch_img_metas[0]['img_path'])
+        imgB_pil = Image.open(batch_img_metas[0]['img_path'].replace('/A', '/B'))
+
+        model, preprocess = init_clip()
+
+        for h_idx in range(h_grids):
+            for w_idx in range(w_grids):
+                y1 = h_idx * h_stride
+                x1 = w_idx * w_stride
+                y2 = min(y1 + h_crop, h_img)
+                x2 = min(x1 + w_crop, w_img)
+                y1 = max(y2 - h_crop, 0)
+                x1 = max(x2 - w_crop, 0)
+                crop_img = inputs[:, :, y1:y2, x1:x2]
+                cropA = imgA_pil.crop((x1, y1, x2, y2))
+                cropB = imgB_pil.crop((x1, y1, x2, y2))
+                jsonA, jsonB = clip_infer(cropA, cropB, model, preprocess)
+                # change the image shape to patch shape
+                batch_img_metas[0]['img_shape'] = crop_img.shape[2:]
+                batch_img_metas[0]['jsonA'] = jsonA
+                batch_img_metas[0]['jsonB'] = jsonB
+                # the output of encode_decode is seg logits tensor map
+                # with shape [N, C, H, W]
+                crop_seg_logit = self.encode_decode(crop_img, batch_img_metas)
+                preds += F.pad(crop_seg_logit,
+                               (int(x1), int(preds.shape[3] - x2), int(y1),
+                                int(preds.shape[2] - y2)))
+
+                count_mat[:, :, y1:y2, x1:x2] += 1
+        assert (count_mat == 0).sum() == 0
+        seg_logits = preds / count_mat
+
+        return seg_logits
 
     def slide_inference(self, inputs: Tensor,
                         batch_img_metas: List[dict]) -> Tensor:
@@ -543,7 +662,6 @@ class ChangeCLIP(BaseSegmentor):
             Tensor: The segmentation results, seg_logits from model of each
                 input image.
         """
-
         h_stride, w_stride = self.test_cfg.stride
         h_crop, w_crop = self.test_cfg.crop_size
         batch_size, _, h_img, w_img = inputs.size()
@@ -613,13 +731,15 @@ class ChangeCLIP(BaseSegmentor):
             Tensor: The segmentation results, seg_logits from model of each
                 input image.
         """
-        assert self.test_cfg.get('mode', 'whole') in ['slide', 'whole'], \
+        assert self.test_cfg.get('mode', 'whole') in ['slide', 'whole', 'mm_slide'], \
             f'Only "slide" or "whole" test mode are supported, but got ' \
             f'{self.test_cfg["mode"]}.'
         ori_shape = batch_img_metas[0]['ori_shape']
         assert all(_['ori_shape'] == ori_shape for _ in batch_img_metas)
         if self.test_cfg.mode == 'slide':
             seg_logit = self.slide_inference(inputs, batch_img_metas)
+        elif self.test_cfg.mode == 'mm_slide':
+            seg_logit = self.mm_slide_inference(inputs, batch_img_metas)
         else:
             seg_logit = self.whole_inference(inputs, batch_img_metas)
 
