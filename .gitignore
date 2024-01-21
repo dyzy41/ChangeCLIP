@@ -111,6 +111,8 @@ venv.bak/
 
 data
 .vscode
+.circleci
+.dev_scripts
 .idea
 
 # custom

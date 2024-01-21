@@ -4,7 +4,9 @@ _base_ = [
     '../_base_/default_runtime.py', 
     '../_base_/schedules/schedule_160k.py']
 import os
-data_root = os.path.join(os.environ.get("CDPATH"), 'ChangeDetectionDataset/Real/subset')
+data_root = os.path.join(os.environ.get("CDPATH"), 'LEVIR-CD/cut_data')
+test_txt_path = os.path.join(os.environ.get("CDPATH"), 'LEVIR-CD/test.txt')
+
 metainfo = dict(
                 classes=('background', 'building'),
                 palette=[[0, 0, 0], [255, 255, 255]])
@@ -73,7 +75,7 @@ model = dict(
         loss_decode=dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
     train_cfg=dict(),
-    test_cfg=dict(mode='whole')
+    test_cfg=dict(mode='slide', crop_size=(256, 256), stride=(128, 128))
 )
 
 
@@ -124,10 +126,10 @@ test_dataloader = dict(
     dataset=dict(
         data_root=data_root,
         metainfo=metainfo,
-        ann_file='test.txt'))
+        ann_file=test_txt_path))
 
 # training schedule for 20k
-train_cfg = dict(type='IterBasedTrainLoop', max_iters=60000, val_interval=2000)
+train_cfg = dict(type='IterBasedTrainLoop', max_iters=40000, val_interval=1000)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 default_hooks = dict(
