@@ -258,7 +258,6 @@ class ChangeCLIP(BaseSegmentor):
         """Run forward function and calculate loss for decode head in
         training."""
         losses = dict()
-        loss_decode = self.decode_head.predict_with_text(x, textA, textB, data_samples, self.train_cfg)
         loss_decode = self.decode_head.loss_changeclip(x, textA, textB, data_samples, self.train_cfg)
         losses.update(add_prefix(loss_decode, 'decode'))
         return losses
