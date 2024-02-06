@@ -44,7 +44,11 @@ bash clip_infer_sysu.sh
 /home/user/dsj_files/CDdata/SYSU-CD/test/time2_clipcls_56_vit16.json
 ```
 
-## 4.For training, You can view the contents of the tools/train.sh file and set the training plan yourself.
+## 4.For training and testing, You can view the contents of the tools/train.sh file and set the training plan yourself.
+
+## 5.我们对训练过程的权重和log文件进行了公开.
+[ChangeCLIP_best_weights](https://pan.baidu.com/s/1JmBPzg4wRwbgIqRU9Pep5g), 提取码: rscd
+
 
 # Acknowledgements  
 This repo benefits from awesome works of [mmsegmentation](https://github.com/open-mmlab/mmsegmentation), [DenseCLIP](https://github.com/raoyongming/DenseCLIP),
