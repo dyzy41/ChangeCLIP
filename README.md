@@ -46,7 +46,7 @@ bash clip_infer_sysu.sh
 
 ## 4.For training and testing, You can view the contents of the tools/train.sh file and set the training plan yourself.
 
-## 5.我们对训练过程的权重和log文件进行了公开.
+## 5.We have made the weights and log files of the training process public. If you cannot download the files of Baidu Netdisk, you can send me an email and I will reply in time and provide download links from other sources.
 [ChangeCLIP_best_weights](https://pan.baidu.com/s/1JmBPzg4wRwbgIqRU9Pep5g), 提取码: rscd
 
 
