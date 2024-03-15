@@ -93,7 +93,7 @@ param_scheduler = [
         eta_min=0.0,
         power=1.0,
         begin=1500,
-        end=20000,
+        end=30000,
         by_epoch=False,
     )
 ]
@@ -121,7 +121,7 @@ test_dataloader = dict(
         ann_file='test.txt'))
 
 # training schedule for 20k
-train_cfg = dict(type='IterBasedTrainLoop', max_iters=60000, val_interval=1000)
+train_cfg = dict(type='IterBasedTrainLoop', max_iters=30000, val_interval=1000)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 default_hooks = dict(
