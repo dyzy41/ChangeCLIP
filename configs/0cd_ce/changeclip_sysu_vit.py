@@ -127,7 +127,7 @@ test_dataloader = dict(
         ann_file='test.txt'))
 
 # training schedule for 20k
-train_cfg = dict(type='IterBasedTrainLoop', max_iters=15000, val_interval=500)
+train_cfg = dict(type='IterBasedTrainLoop', max_iters=20000, val_interval=500)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 default_hooks = dict(
