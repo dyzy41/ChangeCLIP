@@ -47,7 +47,8 @@ bash clip_infer_sysu.sh
 ## 4.For training and testing, You can view the contents of the tools/train.sh file and set the training plan yourself.
 
 ## 5.We have made the weights and log files of the training process public. If you cannot download the files of Baidu Netdisk, you can send me an email and I will reply in time and provide download links from other sources.
-[ChangeCLIP_best_weights](https://pan.baidu.com/s/1MpmSofjJOBNx8ZCn2BWugQ), 提取码：2f0p
+[ChangeCLIP_best_weights](https://pan.baidu.com/s/1MpmSofjJOBNx8ZCn2BWugQ), passwd：2f0p  
+google drive: https://drive.google.com/file/d/1WEkyyxezXU3bQSjUbffGu5TkmTax8tL2/view?usp=drive_link
 
 ## 6. The following is the comparison between ChangeCLIP and advanced algorithms.
 ![LEVIR-CD](docs/levir-cd.png)
