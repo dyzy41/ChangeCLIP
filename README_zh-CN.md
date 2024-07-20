@@ -47,7 +47,8 @@ bash clip_infer_sysu.sh
 ## 4.可以查看tools/train.sh文件的内容，自行设定训练计划
 
 ## 5.我们对训练过程的权重和log文件进行了公开. 如果你无法下载百度网盘的文件，可以给我发邮件，我会及时回复并提供其他来源的下载链接。
-[ChangeCLIP_best_weights](https://pan.baidu.com/s/1JmBPzg4wRwbgIqRU9Pep5g), 提取码: rscd
+[ChangeCLIP_best_weights](https://pan.baidu.com/s/1MpmSofjJOBNx8ZCn2BWugQ), passwd：2f0p
+google drive: https://drive.google.com/file/d/1WEkyyxezXU3bQSjUbffGu5TkmTax8tL2/view?usp=drive_link
 
 # 致谢  
 This repo benefits from awesome works of [mmsegmentation](https://github.com/open-mmlab/mmsegmentation), [DenseCLIP](https://github.com/raoyongming/DenseCLIP),
